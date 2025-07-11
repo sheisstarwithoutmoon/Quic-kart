@@ -20,6 +20,8 @@ Quickart is a full-stack e-commerce application built with Next.js and Firebase,
 
 ### 📝 Upload Prescription of your doctor and just in one click your medicines will be at your doorstep in coming 2 hrs
 
+### 📸 Visual search the products
+
 ### 🔐 Secure Authentication
 - Role-based login system for:
   - 🧑‍🎓 Students / Consumers
