@@ -20,9 +20,11 @@ import { Skeleton } from './ui/skeleton';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
-import { useState, useEffect, useTransition } from 'react';
+import { useState, useEffect } from 'react';
 import { stores } from '@/lib/data';
 import Logo from './Logo';
+import { MobileNav } from './MobileNav';
+
 
 const navLinks = [
     { name: 'Groceries', href: '/category/groceries' },
@@ -39,7 +41,6 @@ export default function Header() {
   const [pincode, setPincode] = useState<string>('');
   const [locationName, setLocationName] = useState<string>('');
   const [popoverOpen, setPopoverOpen] = useState(false);
-  const [isFetchingLocation, startFetchingLocation] = useTransition();
 
   useEffect(() => {
     const savedPincode = localStorage.getItem('deliveryPincode');
@@ -49,36 +50,20 @@ export default function Header() {
     }
     if (savedLocation) {
         setLocationName(savedLocation);
+    } else if (savedPincode) {
+        // Fetch location if only pincode is available
+        handlePincodeSubmit(savedPincode);
     }
   }, []);
   
-  const handlePincodeSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const form = e.currentTarget;
-    const input = form.elements.namedItem('pincode') as HTMLInputElement;
-    const newPincode = input.value;
-    
-    if (newPincode.length >= 5) {
-      startFetchingLocation(async () => {
-        try {
-          const response = await fetch(`https://api.postalpincode.in/pincode/${newPincode}`);
-          const data = await response.json();
-          if (data && data[0] && data[0].Status === 'Success') {
-            const postOffice = data[0].PostOffice[0];
-            const newLocationName = `${postOffice.District}, ${postOffice.State}`;
-            setLocationName(newLocationName);
-            setPincode(newPincode);
-            localStorage.setItem('deliveryPincode', newPincode);
-            localStorage.setItem('deliveryLocationName', newLocationName);
-            setPopoverOpen(false);
-          } else {
-            setLocationName('Invalid Pincode');
-          }
-        } catch (error) {
-          console.error("Failed to fetch pincode data:", error);
-          setLocationName('Could not fetch location');
-        }
-      });
+  const handlePincodeSubmit = (newPincode: string) => {
+    if (newPincode && newPincode.length === 6) {
+        localStorage.setItem('deliveryPincode', newPincode);
+        setPincode(newPincode);
+        // For now, we accept any 6 digit pincode without validation
+        setLocationName(`Pincode: ${newPincode}`);
+        localStorage.setItem('deliveryLocationName', `Pincode: ${newPincode}`);
+        setPopoverOpen(false);
     }
   };
 
@@ -122,7 +107,7 @@ export default function Header() {
       );
     }
     return (
-      <Button asChild variant="ghost"><Link href="/login" className="flex items-center gap-2">
+      <Button asChild variant="ghost" className="hidden md:flex"><Link href="/login" className="flex items-center gap-2">
           <User className="w-5 h-5" />
           <span>Log in</span>
       </Link></Button>
@@ -136,22 +121,29 @@ export default function Header() {
         <div className="container mx-auto px-4">
             <div className="flex justify-between items-center h-16">
                 {/* Left Side */}
-                <div className="flex items-center gap-6">
+                <div className="flex items-center gap-2 md:gap-6">
+                    <MobileNav user={user} handleLogout={handleLogout} />
                     <Logo />
-                     <div className="hidden md:flex items-center gap-2">
+                    <div className="hidden md:flex items-center gap-2 border-l pl-6">
                         <MapPin className="w-5 h-5 text-primary" />
                         <div>
                              <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
                                 <PopoverTrigger asChild>
-                                    <button className="flex flex-col items-start">
+                                    <button className="flex flex-col items-start text-left">
                                         <span className="text-xs font-bold uppercase tracking-wider">Deliver to</span>
                                         <div className="flex items-center text-sm font-bold text-foreground">
-                                          {pincode || 'Select Pincode'} <ChevronDown className="w-4 h-4 ml-1" />
+                                          <span className="truncate max-w-[150px]">{locationName || 'Select Pincode'}</span>
+                                          <ChevronDown className="w-4 h-4 ml-1 flex-shrink-0" />
                                         </div>
                                     </button>
                                 </PopoverTrigger>
                                 <PopoverContent className="w-80">
-                                <form onSubmit={handlePincodeSubmit}>
+                                <form onSubmit={(e) => {
+                                    e.preventDefault();
+                                    const form = e.currentTarget;
+                                    const input = form.elements.namedItem('pincode') as HTMLInputElement;
+                                    handlePincodeSubmit(input.value);
+                                }}>
                                     <div className="grid gap-4">
                                         <div className="space-y-2">
                                             <h4 className="font-medium leading-none">Select Delivery Location</h4>
@@ -162,9 +154,9 @@ export default function Header() {
                                         <div className="grid gap-2">
                                             <Label htmlFor="pincode">Pincode</Label>
                                             <div className="flex items-center gap-2">
-                                              <Input id="pincode" name="pincode" type="text" pattern="d*" maxLength={6} defaultValue={pincode} />
-                                              <Button type="submit" disabled={isFetchingLocation}>
-                                                {isFetchingLocation ? <Loader2 className="animate-spin" /> : 'Apply'}
+                                              <Input id="pincode" name="pincode" type="text" pattern="\d*" maxLength={6} defaultValue={pincode} />
+                                              <Button type="submit">
+                                                Apply
                                               </Button>
                                             </div>
                                         </div>
@@ -180,7 +172,7 @@ export default function Header() {
                 <div className="flex items-center gap-2 md:gap-4 text-sm">
                     <AuthButtons />
                    
-                    <Button asChild variant="ghost">
+                    <Button asChild variant="ghost" className="hidden md:flex">
                       <Link href="/deals" className="flex items-center gap-2">
                           <Tag className="w-5 h-5" />
                           <span>Deals</span>
@@ -189,21 +181,21 @@ export default function Header() {
                     <CartSheet />
                 </div>
             </div>
-        </div>
-        <div className='border-t'>
-            <div className="container mx-auto px-4 flex justify-between items-center h-14">
-                 <nav className="flex items-center gap-6">
+            
+            <nav className="hidden md:flex justify-between items-center h-12 border-t">
+                <div className="flex items-center gap-6">
                     {navLinks.map((link) => (
                         <Link href={link.href} key={link.name} className="flex items-center gap-1 text-sm font-medium text-foreground/80 hover:text-primary">
                             <span>{link.name}</span>
                         </Link>
                     ))}
-                </nav>
-                <div className="flex items-center gap-2 text-sm">
-                    <ShoppingCart className='w-4 h-4'/>
-                    <p>Order everything you need. <Link href={`/store/${mainStoreId}`} className='font-bold underline text-primary'>SHOP NOW</Link></p>
                 </div>
-            </div>
+                <div className="flex items-center gap-2 text-sm text-foreground/80">
+                     <ShoppingCart className="w-4 h-4"/>
+                     <span className="text-muted-foreground font-medium truncate max-w-[250px]">{locationName ? `Delivering to: ${locationName}` : 'Order everything you need.'}</span>
+                     <Link href={`/store/${mainStoreId}`} className="font-bold text-primary underline">SHOP NOW</Link>
+                </div>
+            </nav>
         </div>
     </header>
   );

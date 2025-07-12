@@ -13,6 +13,7 @@ export default function SearchBar() {
   const router = useRouter();
   const queryRef = useRef<HTMLInputElement>(null);
   const [isPending, startTransition] = useTransition();
+  const [isSearching, setIsSearching] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const { toast } = useToast();
@@ -21,8 +22,11 @@ export default function SearchBar() {
     e.preventDefault();
     const searchQuery = queryRef.current?.value;
     if (searchQuery && searchQuery.trim()) {
+      setIsSearching(true);
       const searchUrl = `/search?q=${encodeURIComponent(searchQuery.trim())}`;
       router.push(searchUrl);
+      // Reset searching state after navigation
+      setTimeout(() => setIsSearching(false), 1000);
     }
   };
 
@@ -59,7 +63,10 @@ export default function SearchBar() {
               title: "Image Scanned!",
               description: `Searching for: "${result.description}"`,
             });
+            setIsSearching(true);
             router.push(`/search?q=${encodeURIComponent(result.description)}`);
+            // Reset searching state after navigation
+            setTimeout(() => setIsSearching(false), 1000);
           } else {
             toast({
               title: "Could not identify product",
@@ -103,12 +110,18 @@ export default function SearchBar() {
     }
   };
 
+  const isLoading = isPending || isSearching;
+
   return (
     <div className="max-w-3xl mx-auto">
       <form onSubmit={handleSearch} className="flex items-center gap-2 md:gap-4 p-2 bg-background rounded-lg border border-input focus-within:ring-2 focus-within:ring-ring">
         <div className="relative flex-grow flex items-center">
-          {!imagePreview && (
+          {!imagePreview && !isLoading && (
             <Search className="absolute left-3 h-5 w-5 text-muted-foreground pointer-events-none z-10" />
+          )}
+          
+          {isLoading && !imagePreview && (
+            <Loader2 className="absolute left-3 h-5 w-5 text-muted-foreground animate-spin pointer-events-none z-10" />
           )}
           
           {imagePreview && (
@@ -120,17 +133,27 @@ export default function SearchBar() {
                 className="rounded object-cover" 
                 unoptimized
               />
+              {isPending && (
+                <div className="absolute inset-0 bg-black/40 rounded flex items-center justify-center">
+                  <Loader2 className="h-4 w-4 animate-spin text-white" />
+                </div>
+              )}
             </div>
           )}
           
           <Input
             ref={queryRef}
             type="search"
-            placeholder={imagePreview ? "Analyzing image..." : "Search for groceries, essentials..."}
+            placeholder={
+              isPending ? "Analyzing image..." : 
+              isSearching ? "Searching..." :
+              imagePreview ? "Image uploaded" : 
+              "Search for groceries, essentials..."
+            }
             className={`w-full border-none shadow-none focus-visible:ring-0 h-12 text-base ${
               imagePreview ? 'pl-2' : 'pl-12'
             } disabled:opacity-100 disabled:cursor-wait`}
-            disabled={!!imagePreview || isPending}
+            disabled={isLoading}
           />
         </div>
         
@@ -140,14 +163,19 @@ export default function SearchBar() {
           onChange={handleFileChange}
           className="hidden"
           accept="image/*"
-          disabled={isPending}
+          disabled={isLoading}
         />
         
-        {isPending && (
-          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        {isLoading && (
+          <div className="flex items-center gap-2 px-2">
+            <Loader2 className="h-5 w-5 animate-spin text-primary" />
+            <span className="text-sm text-muted-foreground hidden sm:inline">
+              {isPending ? "Analyzing..." : "Searching..."}
+            </span>
+          </div>
         )}
         
-        {!isPending && imagePreview && (
+        {!isLoading && imagePreview && (
           <Button 
             type="button" 
             size="icon" 
@@ -160,7 +188,7 @@ export default function SearchBar() {
           </Button>
         )}
         
-        {!isPending && !imagePreview && (
+        {!isLoading && !imagePreview && (
           <>
             <Button 
               type="button" 

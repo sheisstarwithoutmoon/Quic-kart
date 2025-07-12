@@ -1,12 +1,7 @@
-
 'use server';
 
 /**
  * @fileOverview Order summarization flow for generating a concise text message-style summary of the order.
- *
- * - summarizeOrder - A function that generates the order summary.
- * - SummarizeOrderInput - The input type for the summarizeOrder function.
- * - SummarizeOrderOutput - The return type for the summarizeOrder function.
  */
 
 import {ai} from '@/ai/genkit';
@@ -22,15 +17,36 @@ const SummarizeOrderInputSchema = z.object({
   ).describe('List of items in the order.'),
   deliveryAddress: z.string().describe('The delivery address for the order.'),
 });
+
 export type SummarizeOrderInput = z.infer<typeof SummarizeOrderInputSchema>;
 
 const SummarizeOrderOutputSchema = z.object({
   summary: z.string().describe('A concise text message-style summary of the order.'),
 });
+
 export type SummarizeOrderOutput = z.infer<typeof SummarizeOrderOutputSchema>;
 
+// Add error handling and logging
 export async function summarizeOrder(input: SummarizeOrderInput): Promise<SummarizeOrderOutput> {
-  return summarizeOrderFlow(input);
+  try {
+    console.log('Input received:', JSON.stringify(input, null, 2));
+    
+    // Validate input
+    const validatedInput = SummarizeOrderInputSchema.parse(input);
+    console.log('Input validated successfully');
+    
+    const result = await summarizeOrderFlow(validatedInput);
+    console.log('Summary generated:', result);
+    
+    return result;
+  } catch (error) {
+    console.error('Error in summarizeOrder:', error);
+    
+    // Return a fallback summary
+    return {
+      summary: `Order: ${input.items?.length || 0} items to ${input.deliveryAddress || 'address not specified'}`
+    };
+  }
 }
 
 const prompt = ai.definePrompt({
@@ -49,7 +65,8 @@ Delivery Address: {{deliveryAddress}}
 {{#if items.0.offer}}
 PS: You've grabbed some great deals!
 {{/if}}
-`,
+
+Please provide a summary in this format: "Order confirmed: [X items] to [address]"`,
 });
 
 const summarizeOrderFlow = ai.defineFlow(
@@ -58,8 +75,76 @@ const summarizeOrderFlow = ai.defineFlow(
     inputSchema: SummarizeOrderInputSchema,
     outputSchema: SummarizeOrderOutputSchema,
   },
-  async input => {
-    const {output} = await prompt(input);
-    return output!;
+  async (input) => {
+    try {
+      console.log('Flow input:', input);
+      
+      const result = await prompt(input);
+      console.log('Prompt result:', result);
+      
+      // Check if output exists and has the expected structure
+      if (!result.output) {
+        throw new Error('No output received from prompt');
+      }
+      
+      // Validate the output structure
+      const validatedOutput = SummarizeOrderOutputSchema.parse(result.output);
+      
+      return validatedOutput;
+    } catch (error) {
+      console.error('Error in summarizeOrderFlow:', error);
+      
+      // Generate a simple fallback summary
+      const itemCount = input.items?.length || 0;
+      const itemNames = input.items?.map(item => `${item.quantity} ${item.name}`).join(', ') || 'items';
+      
+      return {
+        summary: `Order confirmed: ${itemCount} items (${itemNames}) to ${input.deliveryAddress}`
+      };
+    }
   }
 );
+
+// Alternative simpler function for testing
+export async function summarizeOrderSimple(input: SummarizeOrderInput): Promise<SummarizeOrderOutput> {
+  try {
+    const itemCount = input.items?.length || 0;
+    const totalQuantity = input.items?.reduce((sum, item) => sum + item.quantity, 0) || 0;
+    const itemsList = input.items?.map(item => 
+      `${item.quantity} ${item.name}${item.offer ? ` (${item.offer})` : ''}`
+    ).join(', ') || 'No items';
+    
+    const hasDeals = input.items?.some(item => item.offer);
+    
+    let summary = `Order: ${totalQuantity} items (${itemsList}) → ${input.deliveryAddress}`;
+    
+    if (hasDeals) {
+      summary += ' 🎉 Great deals included!';
+    }
+    
+    return { summary };
+  } catch (error) {
+    console.error('Error in summarizeOrderSimple:', error);
+    return { summary: 'Unable to generate order summary' };
+  }
+}
+
+// Debug function to test your AI setup
+export async function testAIConnection(): Promise<boolean> {
+  try {
+    const testInput = {
+      items: [
+        { name: 'Test Item', quantity: 1, offer: 'Test Offer' }
+      ],
+      deliveryAddress: 'Test Address'
+    };
+    
+    const result = await prompt(testInput);
+    console.log('AI test result:', result);
+    
+    return !!result.output;
+  } catch (error) {
+    console.error('AI connection test failed:', error);
+    return false;
+  }
+}

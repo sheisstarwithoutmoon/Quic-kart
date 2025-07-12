@@ -159,9 +159,11 @@ export default function DashboardLayout({
               <PanelLeft />
               <span className="sr-only">Toggle Menu</span>
             </SidebarTrigger>
-            <h1 className="text-xl font-semibold grow">
-                {pageTitle}
-            </h1>
+            <div className="grow">
+                <h1 className="text-xl font-semibold">
+                    {pageTitle}
+                </h1>
+            </div>
         </header>
         <main className="p-4 sm:p-6">{children}</main>
       </SidebarInset>

@@ -1,12 +1,11 @@
-
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useTransition } from 'react';
 import { useSearchParams } from 'next/navigation';
 import type { Item } from '@/lib/types';
 import ItemCard from '@/components/ItemCard';
 import { Button } from '@/components/ui/button';
-import { PackageSearch, SlidersHorizontal } from 'lucide-react';
+import { PackageSearch, SlidersHorizontal, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { searchItemsFromFirestore } from '../../actions';
 import SearchBar from '@/components/SearchBar';
@@ -24,6 +23,7 @@ export default function SearchPage() {
   
   const [loading, setLoading] = useState(true);
   const [allItems, setAllItems] = useState<Item[]>([]);
+  const [initialLoad, setInitialLoad] = useState(true);
 
   // Filter and Sort State
   const [sortOrder, setSortOrder] = useState('relevance');
@@ -35,22 +35,29 @@ export default function SearchPage() {
     async function fetchData() {
       setLoading(true);
       if (searchQuery) {
-        const firestoreItems = await searchItemsFromFirestore(searchQuery);
-        setAllItems(firestoreItems);
-        
-        const maxItemPrice = firestoreItems.reduce((max, item) => item.price > max ? item.price : max, 0);
-        setMaxPrice(Math.ceil(maxItemPrice) || 1000);
-
+        try {
+          const firestoreItems = await searchItemsFromFirestore(searchQuery);
+          setAllItems(firestoreItems);
+          
+          const maxItemPrice = firestoreItems.reduce((max, item) => item.price > max ? item.price : max, 0);
+          setMaxPrice(Math.ceil(maxItemPrice) || 1000);
+        } catch (error) {
+          console.error('Error fetching items:', error);
+          setAllItems([]);
+        }
       } else {
         setAllItems([]);
       }
       setLoading(false);
+      setInitialLoad(false);
     }
     fetchData();
   }, [searchQuery]);
 
   const categories = useMemo(() => {
-    return [...new Set(allItems.map(item => item.category))];
+    const uniqueCategories = new Set<string>();
+    allItems.forEach(item => uniqueCategories.add(item.category));
+    return Array.from(uniqueCategories);
   }, [allItems]);
 
   const handleCategoryChange = (category: string) => {
@@ -86,7 +93,6 @@ export default function SearchPage() {
     return items;
   }, [allItems, sortOrder, selectedCategories, maxPrice, showInStock]);
 
-
   const FiltersComponent = () => (
     <div className="space-y-6">
         <div>
@@ -102,21 +108,23 @@ export default function SearchPage() {
                 </SelectContent>
             </Select>
         </div>
-        <div>
-            <h3 className="text-lg font-semibold mb-2">Category</h3>
-            <div className="space-y-2">
-                {categories.map(category => (
-                    <div key={category} className="flex items-center space-x-2">
-                        <Checkbox
-                            id={category}
-                            checked={selectedCategories.includes(category)}
-                            onCheckedChange={() => handleCategoryChange(category)}
-                        />
-                        <Label htmlFor={category} className="font-normal">{category}</Label>
-                    </div>
-                ))}
-            </div>
-        </div>
+        {categories.length > 0 && (
+          <div>
+              <h3 className="text-lg font-semibold mb-2">Category</h3>
+              <div className="space-y-2">
+                  {categories.map(category => (
+                      <div key={category} className="flex items-center space-x-2">
+                          <Checkbox
+                              id={category}
+                              checked={selectedCategories.includes(category)}
+                              onCheckedChange={() => handleCategoryChange(category)}
+                          />
+                          <Label htmlFor={category} className="font-normal">{category}</Label>
+                      </div>
+                  ))}
+              </div>
+          </div>
+        )}
          <div>
             <h3 className="text-lg font-semibold mb-2">Price Range</h3>
             <Slider
@@ -143,6 +151,68 @@ export default function SearchPage() {
     </div>
   );
 
+  const LoadingComponent = () => (
+    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+      {[...Array(6)].map((_, i) => (
+        <Skeleton key={i} className="h-96 w-full" />
+      ))}
+    </div>
+  );
+
+  const SearchingComponent = () => (
+    <div className="text-center py-20 border-2 border-dashed rounded-lg col-span-full">
+      <div className="max-w-md mx-auto">
+        <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-6">
+          <Loader2 className="w-8 h-8 text-muted-foreground animate-spin" />
+        </div>
+        <h3 className="text-xl font-semibold text-foreground mb-2">
+          Searching Products...
+        </h3>
+        <p className="text-muted-foreground">
+          Please wait while we find products matching "{searchQuery}"
+        </p>
+      </div>
+    </div>
+  );
+
+  const NoResultsComponent = () => (
+    <div className="text-center py-20 border-2 border-dashed rounded-lg col-span-full">
+      <div className="max-w-md mx-auto">
+        <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-6">
+          <PackageSearch className="w-8 h-8 text-muted-foreground" />
+        </div>
+        <h3 className="text-xl font-semibold text-foreground mb-2">
+          No Products Found
+        </h3>
+        <p className="text-muted-foreground mb-4">
+          We couldn't find any products matching your search or filters. Try a different term or adjust your filters.
+        </p>
+        <Button asChild>
+          <Link href="/">Browse All Stores</Link>
+        </Button>
+      </div>
+    </div>
+  );
+
+  const renderMainContent = () => {
+    if (loading) {
+      // Show skeleton cards for initial load, searching indicator for subsequent searches
+      return initialLoad ? <LoadingComponent /> : <SearchingComponent />;
+    }
+
+    if (filteredAndSortedItems.length > 0) {
+      return (
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+          {filteredAndSortedItems.map((item) => (
+            <ItemCard key={item.id} item={item} />
+          ))}
+        </div>
+      );
+    }
+
+    return <NoResultsComponent />;
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
        <div className="mb-8">
@@ -166,14 +236,24 @@ export default function SearchPage() {
                         <h1 className="text-3xl font-bold">
                             Search Results
                         </h1>
-                        <p className="text-muted-foreground mt-1">
-                            Showing {filteredAndSortedItems.length} results for <span className="font-semibold text-foreground">"{searchQuery}"</span>
-                        </p>
+                        {!loading && (
+                          <p className="text-muted-foreground mt-1">
+                              Showing {filteredAndSortedItems.length} results for <span className="font-semibold text-foreground">"{searchQuery}"</span>
+                          </p>
+                        )}
+                        {loading && !initialLoad && (
+                          <p className="text-muted-foreground mt-1">
+                              Searching for <span className="font-semibold text-foreground">"{searchQuery}"</span>...
+                          </p>
+                        )}
                     </div>
                     <div className='lg:hidden'>
                         <Sheet>
                             <SheetTrigger asChild>
-                                <Button variant="outline"><SlidersHorizontal className="mr-2 h-4 w-4" /> Filters</Button>
+                                <Button variant="outline" disabled={loading}>
+                                  <SlidersHorizontal className="mr-2 h-4 w-4" /> 
+                                  Filters
+                                </Button>
                             </SheetTrigger>
                             <SheetContent>
                                 <SheetHeader>
@@ -187,40 +267,26 @@ export default function SearchPage() {
                     </div>
                 </div>
 
-                {loading ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-                        {[...Array(6)].map((_, i) => <Skeleton key={i} className="h-96 w-full" />)}
-                    </div>
-                ) : filteredAndSortedItems.length > 0 ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-                        {filteredAndSortedItems.map((item) => (
-                            <ItemCard key={item.id} item={item} />
-                        ))}
-                    </div>
-                ) : (
-                    <div className="text-center py-20 border-2 border-dashed rounded-lg col-span-full">
-                        <div className="max-w-md mx-auto">
-                            <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-6">
-                                <PackageSearch className="w-8 h-8 text-muted-foreground" />
-                            </div>
-                            <h3 className="text-xl font-semibold text-foreground mb-2">
-                                No Products Found
-                            </h3>
-                            <p className="text-muted-foreground mb-4">
-                                We couldn't find any products matching your search or filters. Try a different term or adjust your filters.
-                            </p>
-                            <Button asChild>
-                                <Link href="/">Browse All Stores</Link>
-                            </Button>
-                        </div>
-                    </div>
-                )}
+                {renderMainContent()}
             </main>
         </div>
       ) : (
-        <h1 className="text-3xl font-bold mb-8">
-            Please enter a search term to find products.
-        </h1>
+        <div className="text-center py-20">
+          <div className="max-w-md mx-auto">
+            <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-6">
+              <PackageSearch className="w-8 h-8 text-muted-foreground" />
+            </div>
+            <h1 className="text-3xl font-bold mb-4">
+              Start Your Search
+            </h1>
+            <p className="text-muted-foreground mb-6">
+              Enter a search term above to find products across all stores.
+            </p>
+            <Button asChild>
+              <Link href="/">Browse All Stores</Link>
+            </Button>
+          </div>
+        </div>
       )}
     </div>
   );
