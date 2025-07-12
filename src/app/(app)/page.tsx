@@ -21,6 +21,7 @@ import PrescriptionUpload from '@/components/PrescriptionUpload';
 import SearchBar from '@/components/SearchBar';
 import { searchItemsFromFirestore } from '../actions';
 import { stores } from '@/lib/data';
+import AnimatedHeading from './animation';
 
 const categories = [
   { name: 'Groceries', image: 'https://i.ibb.co/chCJwJFp/Untitled-design-6.png', 'data-ai-hint': 'groceries', offer: 'SAVE 25%', href: '/category/groceries' },
@@ -40,6 +41,7 @@ export default async function Home() {
     <div className="bg-background">
       {/* Search Section */}
       <section className="relative w-full h-[300px] flex items-center justify-center">
+        <div className="absolute inset-0 bg-black/110"></div>
         <Image
             src="https://i.ibb.co/SDYXJWHb/Your-Health-Matters-1.png"
             alt="Hero banner with groceries and a pharmacy storefront"
@@ -48,11 +50,13 @@ export default async function Home() {
             data-ai-hint="storefront groceries"
             priority
             quality={95}
+          
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
         <div className="relative z-10 container mx-auto px-4">
           <div className="text-center mb-4">
-              <h1 className="text-4xl md:text-5xl font-bold text-white shadow-md">Anything you need, delivered.</h1>
+              {/* <h1 className="text-4xl md:text-5xl font-bold text-white shadow-md">Anything you need, delivered.</h1> */}
+              <AnimatedHeading />
               <p className="text-lg text-white/90 mt-2 shadow-md">Your favorite local stores, now online.</p>
           </div>
           <SearchBar />

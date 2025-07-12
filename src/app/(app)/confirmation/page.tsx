@@ -6,15 +6,17 @@ import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { CheckCircle2, Home, MapPin, Package, AlertCircle, Loader2, Sparkles, MessageSquare } from 'lucide-react';
+import { CheckCircle2, Home, MapPin, Package, AlertCircle, Loader2, MessageSquare, Wand2 } from 'lucide-react';
 import Link from 'next/link';
-import { getOrderAction, generateSummaryAction } from '../../actions';
+import { generateSummaryAction, getOrderAction } from '../../actions';
 import type { Order } from '@/lib/types';
 import { useCart } from '@/hooks/use-cart';
 
-function ConfirmationContent() {
-  const searchParams = useSearchParams();
-  const orderId = searchParams.get('orderId');
+interface ConfirmationContentProps {
+    orderId: string | null;
+}
+
+function ConfirmationContent({ orderId }: ConfirmationContentProps) {
   const { clearCart } = useCart();
   
   const [order, setOrder] = useState<Order | null>(null);
@@ -39,17 +41,13 @@ function ConfirmationContent() {
           setOrder(fetchedOrder);
           clearCart(); // Clear the cart only after successfully fetching the order
 
-          // Now generate the summary
           startSummaryTransition(async () => {
-            const summaryResult = await generateSummaryAction({
-              items: fetchedOrder.items.map(item => ({ 
-                name: item.name, 
-                quantity: item.quantity,
-                offer: item.offer 
-              })),
-              deliveryAddress: fetchedOrder.deliveryAddress,
-            });
-            setSummary(summaryResult.summary);
+              const summaryResult = await generateSummaryAction({
+                  items: fetchedOrder.items.map(item => ({ name: item.name, quantity: item.quantity })),
+                  total: fetchedOrder.total,
+                  deliveryAddress: fetchedOrder.deliveryAddress
+              });
+              setSummary(summaryResult);
           });
 
         } else {
@@ -133,20 +131,19 @@ function ConfirmationContent() {
             </div>
 
             <div className="p-4 rounded-lg border">
-                <h3 className="font-semibold mb-2 flex items-center gap-2"><Sparkles className="w-4 h-4 text-primary"/> AI Summary</h3>
+                <h3 className="font-semibold mb-2 flex items-center gap-2"><MessageSquare className="w-4 h-4 text-primary"/> AI Order Summary</h3>
                 <div className="min-h-[6rem] flex items-center justify-center">
                     {isSummaryLoading ? (
                         <div className="flex items-center gap-2 text-muted-foreground">
-                            <Loader2 className="w-5 h-5 animate-spin" />
-                            <span>Generating your summary...</span>
+                            <Wand2 className="w-5 h-5 animate-pulse text-primary"/>
+                            <span>Generating summary...</span>
                         </div>
                     ) : summary ? (
                         <div className="flex items-start gap-4">
-                            <MessageSquare className="w-5 h-5 text-muted-foreground mt-1 flex-shrink-0"/>
                             <p className="font-mono text-sm whitespace-pre-wrap">{summary}</p>
                         </div>
                     ) : (
-                        <p className="text-sm text-muted-foreground">Could not generate summary.</p>
+                        <p className="text-sm text-destructive">Sorry, we couldn't generate a summary for this order.</p>
                     )}
                 </div>
             </div>
@@ -164,10 +161,17 @@ function ConfirmationContent() {
   );
 }
 
+function ConfirmationPageWrapper() {
+    const searchParams = useSearchParams();
+    const orderId = searchParams.get('orderId');
+
+    return <ConfirmationContent orderId={orderId} />
+}
+
 export default function OrderConfirmationPage() {
     return (
       <Suspense fallback={<div className="container mx-auto px-4 py-8 flex items-center justify-center min-h-[70vh]"><Loader2 className="w-16 h-16 text-primary animate-spin" /></div>}>
-        <ConfirmationContent />
+        <ConfirmationPageWrapper />
       </Suspense>
     );
 }

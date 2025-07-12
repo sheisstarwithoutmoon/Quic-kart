@@ -1,7 +1,7 @@
 
 "use server";
 
-import { summarizeOrder, type SummarizeOrderInput } from "@/ai/flows/summarize-order";
+import { summarizeOrder, type SummarizeOrderInput } from "@/ai/flows/summarize-order-flows";
 import { db } from "@/lib/firebase";
 import { addDoc, collection, doc, getDoc, getDocs, query, serverTimestamp, where, Timestamp, updateDoc, runTransaction } from "firebase/firestore";
 import type { CartItem, Item, Order, UserProfile } from "@/lib/types";
@@ -104,16 +104,6 @@ export async function extractPrescriptionAction(input: ExtractPrescriptionInput)
     }
 }
 
-export async function generateSummaryAction(input: SummarizeOrderInput) {
-    try {
-        const output = await summarizeOrder(input);
-        return output;
-    } catch (error) {
-        console.error("Error generating summary:", error);
-        return { summary: "Sorry, we couldn't generate a summary at this time." };
-    }
-}
-
 interface PlaceOrderActionInput {
     cartItems: CartItem[];
     cartTotal: number;
@@ -140,7 +130,7 @@ export async function placeOrderAction(input: PlaceOrderActionInput) {
     try {
         const orderId = await runTransaction(db, async (transaction) => {
             // 1. First, read ALL documents to check stock availability
-            const itemRefs = input.cartItems.map(cartItem => doc(db, "items", cartItem.id));
+            const itemRefs = input.cartItems.map(cartItem => doc(db!, "items", cartItem.id));
             const itemDocs = await Promise.all(
                 itemRefs.map(itemRef => transaction.get(itemRef))
             );
@@ -201,7 +191,7 @@ export async function placeOrderAction(input: PlaceOrderActionInput) {
                 deliveryPersonName: null,
             };
 
-            const orderCol = collection(db, "orders");
+            const orderCol = collection(db!, "orders");
             const newOrderRef = doc(orderCol); // Create a new document reference with an auto-generated ID
             transaction.set(newOrderRef, orderData);
 
@@ -470,3 +460,14 @@ export async function verifyOtpAndCompleteOrderAction(input: VerifyOtpInput): Pr
         return { success: false, error: "Failed to verify OTP." };
     }
 }
+
+export async function generateSummaryAction(input: SummarizeOrderInput): Promise<string | null> {
+    try {
+        const result = await summarizeOrder(input);
+        return result.summary;
+    } catch (error) {
+        console.error("Error generating order summary:", error);
+        return null;
+    }
+}
+
