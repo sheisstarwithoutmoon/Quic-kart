@@ -1,92 +1,120 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+# Quickart - Your AI-Powered Neighborhood Storefront
 
-@layer base {
-  :root {
-    --background: 0 0% 98%; /* Clean, light background */
-    --foreground: 240 10% 3.9%; /* Slightly muted dark gray */
-    --card: 0 0% 100%; /* White cards */
-    --card-foreground: 240 10% 3.9%;
-    --popover: 0 0% 100%; /* White popovers */
-    --popover-foreground: 240 10% 3.9%;
-    --primary: 142.1 76.2% 36.3%; /* Fresh green */
-    --primary-foreground: 355.7 100% 97.3%; /* Off-white for text on primary */
-    --secondary: 210 20% 98%; /* Very light gray/off-white secondary */
-    --secondary-foreground: 220.9 39.3% 11%; /* Darker text on secondary */
-    --muted: 210 20% 98%; /* Matching secondary for muted elements */
-    --muted-foreground: 220 8.9% 46.1%; /* Muted gray for muted text */
-    --accent: 210 40% 96.1%; /* Light blue-gray for accents */
-    --accent-foreground: 222.2 47.4% 11.2%; /* Darker text on accent */
-    --destructive: 0 84.2% 60.2%; /* Red for destructive actions */
-    --destructive-foreground: 210 20% 98%; /* Off-white for text on destructive */
-    --border: 214.3 31.8% 91.4%; /* Light gray border */
-    --input: 214.3 31.8% 91.4%; /* Matching light gray input border */
-    --ring: 142.1 76.2% 36.3%; /* Ring color matching primary */
-    --radius: 0.8rem; /* Keeping the existing radius */
-    --chart-1: 12 76% 61%; /* Keeping existing chart colors for now */
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
-    /* Adjusting sidebar colors for better contrast and theme consistency */
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 142.1 76.2% 36.3%;
-    --sidebar-primary-foreground: 355.7 100% 97.3%;
-    --sidebar-accent: 210 40% 96.1%;
-    --sidebar-accent-foreground: 222.2 47.4% 11.2%;
-    --sidebar-border: 214.3 31.8% 91.4%;
-    --sidebar-ring: 142.1 76.2% 36.3%;
-  }
+No Blinkit? No BigBasket? No Zepto? No PharmEasy? in your local area Quickart is to the rescue no profitable model (for developer, free to use, no platform charges) just by community to community for locals.
+As in India there are so many places where all these apps can't reach but public is willing to pay.
+Whether you're a student ordering late-night snacks, a local store owner wanting to reach more customers, or a delivery partner working within campus – Quickart bridges the gap between **local demand and instant supply**.
 
-  .dark {
-    --background: 20 14.3% 4.5%; /* Dark background */
-    --foreground: 0 0% 95.5%; /* Light foreground */
-    --card: 24 9.8% 10%; /* Slightly lighter dark for cards */
-    --card-foreground: 0 0% 95.5%;
-    --popover: 20 14.3% 4.5%; /* Dark popover */
-    --popover-foreground: 0 0% 95.5%;
-    --primary: 142.1 76.2% 36.3%; /* Keeping the green primary */
-    --primary-foreground: 355.7 100% 97.3%;
-    --secondary: 24 9.8% 10%; /* Slightly lighter dark for secondary */
-    --secondary-foreground: 0 0% 95.5%;
-    --muted: 24 9.8% 10%; /* Matching secondary for muted */
-    --muted-foreground: 240 5% 64.9%;
-    --accent: 12 6.5% 15.1%; /* Darker accent */
-    --accent-foreground: 0 0% 95.5%;
-    --destructive: 0 62.8% 30.6%; /* Darker destructive */
-    --destructive-foreground: 0 0% 95.5%;
-    --border: 24 9.8% 10%; /* Dark border */
-    --input: 24 9.8% 10%; /* Dark input border */
-    --ring: 142.1 76.2% 36.3%; /* Ring color matching primary */
-    --chart-1: 220 70% 50%; /* Keeping existing dark mode chart colors */
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
-    /* Adjusting sidebar colors for better contrast and theme consistency in dark mode */
-    --sidebar-background: 20 14.3% 4.5%;
-    --sidebar-foreground: 0 0% 95.5%;
-    --sidebar-primary: 142.1 76.2% 36.3%;
-    --sidebar-primary-foreground: 355.7 100% 97.3%;
-    --sidebar-accent: 12 6.5% 15.1%;
-    --sidebar-accent-foreground: 0 0% 95.5%;
-    --sidebar-border: 24 9.8% 10%;
-    --sidebar-ring: 142.1 76.2% 36.3%;
-  }
-}
+Quickart is a full-stack e-commerce application built with Next.js and Firebase, designed to bring local stores online. It features a modern, responsive interface and leverages Google's Gemini AI through Genkit for intelligent features like an AI shopping assistant, order summaries, and product recommendations.
 
-@layer base {
-  * {
-    @apply border-border;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
-}
-# Firebase Studio
+![Quickart Homepage](https://quic-kart-ct66za81z-vanyas-projects-ed11fcee.vercel.app/)
 
-This is a NextJS starter in Firebase Studio.
+## ⚙️ Key Features
 
-To get started, take a look at src/app/page.tsx.
+### 🛍️ Local Store & Product Browsing
+- Browse nearby medical stores or grocery stores curated specifically for your area.
+- Clean and modern interface to view product details and availability.
+
+### 🛒 Smart Shopping Cart
+- Add, update, and remove items easily.
+- Handles items from multiple stores efficiently.
+
+### 📝 Upload Prescription of your doctor and just in one click your medicines will be at your doorstep in coming 2 hrs
+
+### 📸 Visual search the products
+
+### 🔐 Secure Authentication
+- Role-based login system for:
+  - 🧑‍🎓 Students / Consumers
+  - 🏪 Store Owners
+  - 🚴 Delivery Partners
+- Authentication managed via **Firebase Auth**.
+
+### 🤖 AI Shopping Assistant
+- Chat with a built-in AI assistant powered by **Genkit** and **Gemini**.
+- Ask product-related questions or get help finding items instantly.
+
+### 📸 AI Tools for Convenience
+- **Prescription Reader**: Upload prescriptions and auto-extract medicine names and doses.
+- **Visual Search**: Upload a product image and let the AI find similar items in local stores.
+
+### 🧠 Product Recommendations
+- Get intelligent, AI-powered suggestions for related products on product pages.
+
+### 📝 Order Summaries
+- Each order includes a **WhatsApp-style summary** with clear, readable itemization.
+
+### 📊 Dashboards for Every Role
+- **Consumers**: View order history and current status.
+- **Store Owners**: Manage inventory, live orders, and assign deliveries.
+- **Delivery Personnel**: Access assigned deliveries, customer details, and OTP verification tools.
+
+### 🚚 End-to-End Order Management
+- Real-time tracking from order placement to delivery.
+- OTP-based delivery verification ensures secure hand-offs.
+
+## Tech Stack
+
+- **Framework**: [Next.js](https://nextjs.org/) (with App Router)
+- **Styling**: [Tailwind CSS](https://tailwindcss.com/) 
+- **AI/Generative**: [Google AI Studio (Gemini)](https://ai.google.dev/) & [Genkit](https://firebase.google.com/docs/genkit)
+- **Backend & DB**: [Firebase](https://firebase.google.com/) (Firestore, Authentication)
+- **State Management**: React Context API (for Cart & Auth)
+- **Form Handling**: [React Hook Form](https://react-hook-form.com/) & [Zod](https://zod.dev/)
+
+## Getting Started
+
+To get a local copy up and running, follow these simple steps.
+
+### Prerequisites
+
+- [Node.js](https://nodejs.org/) (v18 or newer recommended)
+- `npm` or `yarn`
+
+### Setup
+
+1.  **Clone the repository:**
+    ```sh
+    git clone https://github.com/your-username/your-repo-name.git
+    cd your-repo-name
+    ```
+
+2.  **Install NPM packages:**
+    ```sh
+    npm install
+    ```
+
+3.  **Set up Firebase:**
+    - Create a new project on the [Firebase Console](https://console.firebase.google.com/).
+    - Create a **Web App** in your Firebase project settings.
+    - Copy your Firebase configuration credentials.
+    - Create a `.env` file in the root of your project and add your Firebase credentials:
+      ```env
+      NEXT_PUBLIC_FIREBASE_API_KEY=YOUR_API_KEY
+      NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=YOUR_AUTH_DOMAIN
+      NEXT_PUBLIC_FIREBASE_PROJECT_ID=YOUR_PROJECT_ID
+      NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=YOUR_STORAGE_BUCKET
+      NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=YOUR_MESSAGING_SENDER_ID
+      NEXT_PUBLIC_FIREBASE_APP_ID=YOUR_APP_ID
+      ```
+    - In the Firebase Console, go to **Build > Firestore Database** and create a database.
+    - Go to **Build > Authentication** and enable the **Email/Password** sign-in method.
+
+4.  **Set up Google AI (for Genkit):**
+    - Go to [Google AI Studio](https://aistudio.google.com/app/apikey) to generate an API key.
+    - Add this key to your `.env` file:
+      ```env
+      GOOGLE_API_KEY=YOUR_GOOGLE_AI_API_KEY
+      ```
+
+5.  **Run the Genkit developer UI (in a separate terminal):**
+    ```sh
+    npm run genkit:dev
+    ```
+    This will start the Genkit development server, usually on `http://localhost:4000`.
+
+6.  **Run the Next.js development server:**
+    ```sh
+    npm run dev
+    ```
+
+Open [https://quic-kart-ct66za81z-vanyas-projects-ed11fcee.vercel.app/](https://quic-kart-ct66za81z-vanyas-projects-ed11fcee.vercel.app/) with your browser to see the result.
