@@ -6,7 +6,7 @@ Whether you're a student ordering late-night snacks, a local store owner wanting
 
 Quickart is a full-stack e-commerce application built with Next.js and Firebase, designed to bring local stores online. It features a modern, responsive interface and leverages Google's Gemini AI through Genkit for intelligent features like an AI shopping assistant, order summaries, and product recommendations.
 
-![Quickart Homepage](https://quic-kart-ct66za81z-vanyas-projects-ed11fcee.vercel.app/)
+![Quickart Homepage](https://quic-kart-dof1gt79p-vanyas-projects-ed11fcee.vercel.app/)
 
 ## ⚙️ Key Features
 
@@ -117,4 +117,4 @@ To get a local copy up and running, follow these simple steps.
     npm run dev
     ```
 
-Open [https://quic-kart-ct66za81z-vanyas-projects-ed11fcee.vercel.app/](https://quic-kart-ct66za81z-vanyas-projects-ed11fcee.vercel.app/) with your browser to see the result.
+Open [https://quic-kart-dof1gt79p-vanyas-projects-ed11fcee.vercel.app/](https://quic-kart-dof1gt79p-vanyas-projects-ed11fcee.vercel.app/) with your browser to see the result.
