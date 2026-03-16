@@ -1,4 +1,3 @@
-
 import {
   ChevronRight,
   ShoppingCart,
@@ -40,24 +39,25 @@ export default async function Home() {
   return (
     <div className="bg-background">
       {/* Search Section */}
-      <section className="relative w-full h-[300px] flex items-center justify-center">
-        <div className="absolute inset-0 bg-black/110"></div>
+      <section className="relative w-full h-[300px] flex items-center justify-center overflow-hidden">
         <Image
-            src="https://i.ibb.co/SDYXJWHb/Your-Health-Matters-1.png"
-            alt="Hero banner with groceries and a pharmacy storefront"
-            fill
-            className="object-cover"
-            data-ai-hint="storefront groceries"
-            priority
-            quality={95}
-          
+          src="https://i.ibb.co/rGGkMYgk/Your-Health-Matters-2.png"
+          alt="Hero banner with groceries and a pharmacy storefront"
+          fill
+          className="object-cover"
+          data-ai-hint="storefront groceries"
+          priority
+          quality={95}
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+        {/* Fixed overlay: removed invalid bg-black/110, now uses proper gradient for text readability */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/45 to-black/25" />
+
         <div className="relative z-10 container mx-auto px-4">
           <div className="text-center mb-4">
-              {/* <h1 className="text-4xl md:text-5xl font-bold text-white shadow-md">Anything you need, delivered.</h1> */}
-              <AnimatedHeading />
-              <p className="text-lg text-white/90 mt-2 shadow-md">Your favorite local stores, now online.</p>
+            <AnimatedHeading />
+            <p className="text-lg text-white mt-2 font-medium drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
+              Your favorite local stores, now online.
+            </p>
           </div>
           <SearchBar />
         </div>
@@ -87,7 +87,7 @@ export default async function Home() {
           </div>
         </div>
       </section>
-      
+
       {/* Order with Prescription Section */}
       <section className="pb-8">
         <div className="container mx-auto px-4">
@@ -104,7 +104,7 @@ export default async function Home() {
                         <ShoppingCart className="w-8 h-8 text-primary"/>
                         <div>
                             <p className="font-bold text-foreground">Everything you need, delivered fast</p>
-                            <p className="text-sm text-muted-foreground">START SHOPPING NOW & get delivered</p>
+                            <p className="text-sm text-muted-foreground">START SHOPPING NOW &amp; get delivered</p>
                         </div>
                     </div>
                     <Button variant="ghost" asChild>
