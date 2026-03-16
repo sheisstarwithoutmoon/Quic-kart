@@ -3,8 +3,8 @@
  * @fileOverview An AI flow for generating a friendly order summary.
  */
 
-import {ai} from '@/ai/genkit';
-import {z} from 'zod';
+import { groqClient, TEXT_MODEL } from '@/ai/groq-client';
+import { z } from 'zod';
 
 const OrderItemSchema = z.object({
   name: z.string(),
@@ -19,50 +19,39 @@ const SummarizeOrderInputSchema = z.object({
 export type SummarizeOrderInput = z.infer<typeof SummarizeOrderInputSchema>;
 
 const SummarizeOrderOutputSchema = z.object({
-  summary: z
-    .string()
-    .describe(
-      'A short, friendly, text-message-style confirmation for the order.'
-    ),
+  summary: z.string().describe('A short, friendly, text-message-style confirmation for the order.'),
 });
 export type SummarizeOrderOutput = z.infer<typeof SummarizeOrderOutputSchema>;
 
-export async function summarizeOrder(
-  input: SummarizeOrderInput
-): Promise<SummarizeOrderOutput> {
-  return summarizeOrderFlow(input);
-}
+export async function summarizeOrder(input: SummarizeOrderInput): Promise<SummarizeOrderOutput> {
+  const itemsList = input.items.map(i => `- ${i.quantity}x ${i.name}`).join('\n');
 
-const prompt = ai.definePrompt({
-  name: 'summarizeOrderPrompt',
-  input: {schema: SummarizeOrderInputSchema},
-  output: {schema: SummarizeOrderOutputSchema},
-  prompt: `You are an AI for Quickart, a local delivery app. Your task is to generate a short, friendly, text-message-style confirmation summary for an order.
-
-**Guidelines:**
-- Start with a confirmation like "Your Quickart order for ₹{total} is confirmed!".
-- List the items included.
-- Mention the delivery address.
-- End with a friendly closing like "We'll let you know when it's on the way!".
-- Keep it concise and conversational.
-
-**Order Details:**
-- Total: ₹{{total}}
+  const response = await groqClient.chat.completions.create({
+    model: TEXT_MODEL,
+    messages: [
+      {
+        role: 'system',
+        content: `You are an AI for Quickart, a local delivery app. Generate a short, friendly, text-message-style order confirmation summary.
+Guidelines:
+- Start with "Your Quickart order for ₹{total} is confirmed!"
+- List the items included
+- Mention the delivery address
+- End with "We'll let you know when it's on the way!"
+- Keep it concise and conversational
+Respond with ONLY a JSON object in this format: {"summary": "..."}`,
+      },
+      {
+        role: 'user',
+        content: `Order Details:
+- Total: ₹${input.total}
 - Items:
-{{#each items}}
-- {{quantity}}x {{name}}
-{{/each}}
-- Address: {{deliveryAddress}}`,
-});
+${itemsList}
+- Address: ${input.deliveryAddress}`,
+      },
+    ],
+    response_format: { type: 'json_object' },
+  });
 
-const summarizeOrderFlow = ai.defineFlow(
-  {
-    name: 'summarizeOrderFlow',
-    inputSchema: SummarizeOrderInputSchema,
-    outputSchema: SummarizeOrderOutputSchema,
-  },
-  async input => {
-    const {output} = await prompt(input);
-    return output!;
-  }
-);
+  const result = JSON.parse(response.choices[0].message.content || '{}');
+  return { summary: result.summary || '' };
+}

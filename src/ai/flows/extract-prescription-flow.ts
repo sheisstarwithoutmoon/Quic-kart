@@ -1,64 +1,67 @@
 'use server';
 /**
  * @fileOverview An AI flow for extracting details from a medical prescription image.
- *
- * - extractPrescriptionDetails - A function that handles the prescription extraction process.
- * - ExtractPrescriptionInput - The input type for the extractPrescriptionDetails function.
- * - ExtractPrescriptionOutput - The return type for the extractPrescriptionDetails function.
  */
 
-import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import { groqClient, VISION_MODEL } from '@/ai/groq-client';
+import { z } from 'zod';
 
 const ExtractPrescriptionInputSchema = z.object({
-  photoDataUri: z
-    .string()
-    .describe(
-      "A photo of a medical prescription, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
-    ),
+  photoDataUri: z.string().describe("A photo of a medical prescription as a data URI."),
 });
 export type ExtractPrescriptionInput = z.infer<typeof ExtractPrescriptionInputSchema>;
 
 const MedicineSchema = z.object({
-    name: z.string().describe('The name of the medicine.'),
-    dosage: z.string().describe('The dosage instruction (e.g., "500mg", "1 tablet").'),
-    frequency: z.string().describe('The frequency of intake (e.g., "Twice a day", "Once daily before bed").'),
+  name: z.string(),
+  dosage: z.string(),
+  frequency: z.string(),
 });
 
 const ExtractPrescriptionOutputSchema = z.object({
-  medicines: z.array(MedicineSchema).describe('A list of medicines extracted from the prescription.'),
-  isReadable: z.boolean().describe('Whether the prescription image was clear and readable.'),
-  error: z.string().optional().describe('Any error or reason why the prescription could not be read.'),
+  medicines: z.array(MedicineSchema),
+  isReadable: z.boolean(),
+  error: z.string().optional(),
 });
 export type ExtractPrescriptionOutput = z.infer<typeof ExtractPrescriptionOutputSchema>;
 
 export async function extractPrescriptionDetails(input: ExtractPrescriptionInput): Promise<ExtractPrescriptionOutput> {
-  return extractPrescriptionFlow(input);
+  const response = await groqClient.chat.completions.create({
+    model: VISION_MODEL,
+    messages: [
+      {
+        role: 'user',
+        content: [
+          {
+            type: 'text',
+            text: `You are an expert pharmacist's assistant. Read this medical prescription image and extract medicine details.
+
+For each medicine, extract: name, dosage (e.g. "500mg", "1 tablet"), and frequency (e.g. "Twice a day").
+
+If the image is blurry, unreadable, or not a prescription, set isReadable to false with an error message.
+
+Respond with ONLY a JSON object in this format:
+{
+  "isReadable": true,
+  "medicines": [
+    { "name": "...", "dosage": "...", "frequency": "..." }
+  ],
+  "error": null
+}`,
+          },
+          {
+            type: 'image_url',
+            image_url: { url: input.photoDataUri },
+          },
+        ],
+      },
+    ],
+    response_format: { type: 'json_object' },
+  });
+
+  const result = JSON.parse(response.choices[0].message.content || '{}');
+  return {
+    medicines: result.medicines || [],
+    isReadable: result.isReadable ?? false,
+    error: result.error || undefined,
+  };
 }
-
-const prompt = ai.definePrompt({
-  name: 'extractPrescriptionPrompt',
-  input: {schema: ExtractPrescriptionInputSchema},
-  output: {schema: ExtractPrescriptionOutputSchema},
-  prompt: `You are an expert pharmacist's assistant. Your task is to accurately read a medical prescription from an image and extract the details of each medicine.
-
-Analyze the provided image. Perform OCR to read the text.
-
-From the text, identify each medicine prescribed. For each medicine, extract its name, dosage (e.g., "500mg", "1 tablet"), and frequency (e.g., "Twice a day", "Once a day for 7 days").
-
-If the image is blurry, unreadable, or not a prescription, set 'isReadable' to false and provide a reason in the 'error' field. Otherwise, set 'isReadable' to true and list the extracted medicines.
-
-Image to analyze: {{media url=photoDataUri}}`,
-});
-
-const extractPrescriptionFlow = ai.defineFlow(
-  {
-    name: 'extractPrescriptionFlow',
-    inputSchema: ExtractPrescriptionInputSchema,
-    outputSchema: ExtractPrescriptionOutputSchema,
-  },
-  async input => {
-    const {output} = await prompt(input);
-    return output!;
-  }
-);

@@ -3,7 +3,7 @@
  * @fileOverview An AI flow for recommending similar products.
  */
 
-import { ai } from '@/ai/genkit';
+import { groqClient, TEXT_MODEL } from '@/ai/groq-client';
 import { z } from 'zod';
 
 const ProductSchema = z.object({
@@ -16,70 +16,67 @@ const ProductSchema = z.object({
 export type Product = z.infer<typeof ProductSchema>;
 
 const RecommendProductsInputSchema = z.object({
-  currentItem: ProductSchema.describe('The product for which to find alternatives.'),
-  productList: z.array(ProductSchema).describe('A list of all available products in the store to compare against.'),
+  currentItem: ProductSchema,
+  productList: z.array(ProductSchema),
 });
 export type RecommendProductsInput = z.infer<typeof RecommendProductsInputSchema>;
 
 const RecommendationSchema = z.object({
-    id: z.string().describe("The ID of the recommended product."),
-    name: z.string().describe('The name of the recommended product.'),
-    image: z.string().describe('The image URL of the recommended product.'),
-    reason: z.string().describe("A very brief, compelling reason why this is a good recommendation for the user (e.g., 'Similar composition' or 'Also for bone health')."),
+  id: z.string(),
+  name: z.string(),
+  image: z.string(),
+  reason: z.string(),
 });
 
 const RecommendProductsOutputSchema = z.object({
-  recommendations: z.array(RecommendationSchema).describe('A list of up to 4 recommended similar products. Do not include the currentItem in this list.'),
+  recommendations: z.array(RecommendationSchema),
 });
 export type RecommendProductsOutput = z.infer<typeof RecommendProductsOutputSchema>;
 
-
 export async function recommendProducts(input: RecommendProductsInput): Promise<RecommendProductsOutput> {
-  return recommendProductsFlow(input);
+  // Filter out current item before sending to model
+  const filteredList = input.productList.filter(p => p.id !== input.currentItem.id);
+
+  const productsList = filteredList
+    .map(p => `- ID: ${p.id}\n  Name: ${p.name}\n  Description: ${p.description}\n  Category: ${p.category}\n  Image: ${p.image}`)
+    .join('\n');
+
+  const response = await groqClient.chat.completions.create({
+    model: TEXT_MODEL,
+    messages: [
+      {
+        role: 'system',
+        content: `You are a product recommendation engine for an online pharmacy and grocery store.
+
+Your task:
+1. Analyze the current product
+2. Find up to 4 most similar or relevant products from the available list
+3. Prioritize same category products
+4. DO NOT recommend the current product itself
+5. For each recommendation provide a short user-facing reason (e.g. "Also for bone health", "Similar multivitamin")
+
+Respond with ONLY a JSON object in this format:
+{
+  "recommendations": [
+    { "id": "...", "name": "...", "image": "...", "reason": "..." }
+  ]
 }
+If no suitable alternatives, return empty recommendations array.`,
+      },
+      {
+        role: 'user',
+        content: `Current Product:
+- Name: ${input.currentItem.name}
+- Description: ${input.currentItem.description}
+- Category: ${input.currentItem.category}
 
-const prompt = ai.definePrompt({
-  name: 'recommendProductsPrompt',
-  input: { schema: RecommendProductsInputSchema },
-  output: { schema: RecommendProductsOutputSchema },
-  prompt: `You are a product recommendation engine for an online pharmacy and grocery store. Your goal is to suggest relevant and helpful alternative products to the user.
+Available Products:
+${productsList}`,
+      },
+    ],
+    response_format: { type: 'json_object' },
+  });
 
-**Current Product:**
-- Name: {{currentItem.name}}
-- Description: {{currentItem.description}}
-- Category: {{currentItem.category}}
-
-**Available Products for Recommendation:**
-{{#each productList}}
-- ID: {{id}}
-  Name: {{name}}
-  Description: {{description}}
-  Category: {{category}}
-  Image: {{image}}
-{{/each}}
-
-**Your Task:**
-1.  Analyze the **Current Product**.
-2.  From the **Available Products for Recommendation** list, identify up to **4** products that are the most similar or relevant.
-3.  Prioritize products in the same category. Also consider products that treat similar conditions or have similar ingredients based on their name and description.
-4.  **Crucially, DO NOT recommend the Current Product itself.** Filter it out from your suggestions.
-5.  For each recommendation, provide a very short, user-facing \`reason\` for the suggestion. For example: "Also for bone health", "Similar multivitamin", "Alternative pain reliever".
-6.  Return the results in the specified output format. If no suitable alternatives are found, return an empty \`recommendations\` array.`,
-});
-
-const recommendProductsFlow = ai.defineFlow(
-  {
-    name: 'recommendProductsFlow',
-    inputSchema: RecommendProductsInputSchema,
-    outputSchema: RecommendProductsOutputSchema,
-  },
-  async (input) => {
-    // Filter out the current item from the list before sending to the model
-    const filteredProductList = input.productList.filter(p => p.id !== input.currentItem.id);
-    const { output } = await prompt({
-        ...input,
-        productList: filteredProductList
-    });
-    return output!;
-  }
-);
+  const result = JSON.parse(response.choices[0].message.content || '{}');
+  return { recommendations: result.recommendations || [] };
+}
